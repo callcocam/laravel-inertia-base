@@ -1,0 +1,119 @@
+<script setup lang="ts">
+import { KeyRound, Trash2 } from '@lucide/vue';
+import { ref } from 'vue';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import type { Passkey } from '@/types/auth';
+import { useT } from '@/composables/useT';
+
+const props = defineProps<{
+    passkey: Passkey;
+}>();
+
+const emit = defineEmits<{
+    remove: [id: string, onError: () => void];
+}>();
+
+const { t } = useT();
+
+const isDeleting = ref(false);
+
+const handleDelete = () => {
+    isDeleting.value = true;
+    emit('remove', props.passkey.id, () => {
+        isDeleting.value = false;
+    });
+};
+</script>
+
+<template>
+    <div class="flex items-center justify-between border-b p-4 last:border-b-0">
+        <div class="flex items-center gap-4">
+            <div
+                class="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            >
+                <KeyRound class="text-muted-foreground h-5 w-5" />
+            </div>
+            <div class="space-y-1">
+                <div class="flex items-center gap-2.5">
+                    <p class="font-medium tracking-tight">{{ passkey.name }}</p>
+                    <span
+                        v-if="passkey.authenticator"
+                        class="bg-muted text-muted-foreground ring-border inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ring-1 ring-inset"
+                    >
+                        {{ passkey.authenticator }}
+                    </span>
+                </div>
+                <p class="text-muted-foreground text-sm">
+                    {{
+                        t('app.settings.passkeys.added', {
+                            date: passkey.created_at_diff,
+                        })
+                    }}
+                    <template v-if="passkey.last_used_at_diff">
+                        <span class="text-muted-foreground/50 mx-1">/</span>
+                        {{
+                            t('app.settings.passkeys.last_used', {
+                                date: passkey.last_used_at_diff,
+                            })
+                        }}
+                    </template>
+                </p>
+            </div>
+        </div>
+
+        <Dialog>
+            <DialogTrigger as-child>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                    <Trash2 class="h-4 w-4" />
+                    <span class="sr-only">{{
+                        t('app.settings.passkeys.remove')
+                    }}</span>
+                </Button>
+            </DialogTrigger>
+
+            <DialogContent>
+                <DialogTitle>{{
+                    t('app.settings.passkeys.remove_title')
+                }}</DialogTitle>
+                <DialogDescription>
+                    {{
+                        t('app.settings.passkeys.remove_description', {
+                            name: passkey.name,
+                        })
+                    }}
+                </DialogDescription>
+                <DialogFooter class="gap-2">
+                    <DialogClose as-child>
+                        <Button variant="secondary">{{
+                            t('app.common.cancel')
+                        }}</Button>
+                    </DialogClose>
+                    <Button
+                        variant="destructive"
+                        :disabled="isDeleting"
+                        @click="handleDelete"
+                    >
+                        {{
+                            isDeleting
+                                ? t('app.settings.passkeys.removing')
+                                : t('app.settings.passkeys.remove_confirm')
+                        }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    </div>
+</template>
